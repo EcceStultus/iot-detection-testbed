@@ -133,6 +133,21 @@ These are settled; keep them unless there is a strong reason to revisit.
   are the contained alternative for the "outbound to public" shape.
 - **DoS targets a device, never the gateway** — flooding the gateway would also
   kill the capture/C2 path and corrupt the run.
+- **Exploit-probe spreading is emitted as *structure only*, payload neutralised.**
+  The family profiles (Gafgyt/Mozi) reproduce the known router/DVR
+  command-injection CVE requests (Huawei HG532, Realtek SDK, GPON, JAWS DVR,
+  D-Link HNAP). The real request *structure* — method, URI, SOAPAction, the
+  injection parameter — is what a NIDS signature matches, so we emit exactly
+  that, but the command payload is replaced by an inert shell no-op marker.
+  Result: faithful signature, zero working exploit, fired at lab devices that
+  are not vulnerable anyway. Same logic as the inert credential phase.
+- **Mozi's P2P mesh stays inside the lab.** Mozi has no central C2; its signature
+  is BitTorrent-DHT (bencoded UDP `ping`/`find_node`) chatter among peers. We
+  reproduce that DHT traffic with lab hosts as the peer set, and emit a
+  recognisable lab marker (`TB…`) as the node-ID prefix rather than a real Mozi
+  config hash — so the family is identifiable in capture without impersonating
+  live infrastructure. The real public DHT bootstrap nodes are contacted only if
+  explicitly egress-allowlisted.
 - **Two kinds of credentials, handled oppositely.** The attacker guess-list is
   emitted as attempt traffic to *produce the brute-force signature* and never
   surfaces a valid pair (signature generator, not a credential cracker). The
@@ -148,7 +163,9 @@ These are settled; keep them unless there is a strong reason to revisit.
 
 | Component | Now | Target |
 |---|---|---|
-| **Adversary emulator** (`iot_botnet_emulator.py`) | ✅ 9 kill-chain phases, 5 scenarios, ATT&CK-tagged, labelled output, dry-run default, private-IP guard, paho 1.x/2.x safe | add family profiles (Mirai/Gafgyt/Mozi), egress allowlist, YAML-driven config |
+| **Adversary emulator** (`iot_botnet_emulator.py`) | ✅ 9 kill-chain phases, 5 scenarios, ATT&CK-tagged, labelled output, dry-run default, private-IP guard, paho 1.x/2.x safe | migrate onto `testbed_lib`; YAML-driven config |
+| **Family profiles** (`iot_family_profiles.py`) | ✅ Mirai/Gafgyt/Mozi distinct profiles — per-family creds, C2 shape (Mirai fixed heartbeat / Gafgyt plaintext tokens / Mozi BitTorrent-DHT P2P), neutralised CVE exploit-probe spreading, bounded family-specific DDoS vectors; `family`-labelled output; dry-run default; egress allowlist | validate feature distributions vs real per-family captures (M2) |
+| **Shared plumbing** (`testbed_lib.py`) | ✅ LAB_NET guard + egress allowlist, RunContext + ground-truth recording, manifest/CSV/JSONL/capture writers, collision-free run ids, shared CLI | emulator to adopt it |
 | **C2 sink** (`sim_c2.py`) | ✅ HTTP/TCP/UDP listeners + JSONL log; mosquitto for the rogue broker | optional deploy on a self-owned VPS for real public egress |
 | **Benign traffic generator** | ✗ | realistic baseline: MQTT telemetry, cloud check-ins, NTP/DNS, mDNS/SSDP, firmware polls — a first-class component, not idle silence |
 | **Capture** | tcpdump command documented | wrap as a service on the gateway/mirror; rotate + checksum PCAPs |
@@ -238,7 +255,9 @@ malware effects and IP cameras are out of scope by design, not omission.
 iot-detection-testbed/
 ├── PROJECT.md                 ← this document (master plan)
 ├── README.md                  ← emulator documentation & rationale
-├── iot_botnet_emulator.py     ← adversary emulator (done)
+├── iot_botnet_emulator.py     ← generic adversary emulator (done)
+├── iot_family_profiles.py     ← Mirai/Gafgyt/Mozi family profiles (done)
+├── testbed_lib.py             ← shared plumbing: guard, recording, outputs (done)
 ├── sim_c2.py                  ← C2 sink (done)
 ├── config/
 │   └── broker.env.example     ← template; real broker.env is git-ignored
@@ -252,10 +271,16 @@ iot-detection-testbed/
 
 ## 13. Status & changelog
 
-- **Done:** adversary emulator (9 phases, 5 scenarios, tested); C2 sink (tested);
-  emulator documentation; repo scaffold; this plan.
-- **Next:** M1 labelled-dataset pipeline → M2 external validation → M3 benign
-  generator → M4 detector + evaluation.
+- **Done:** generic adversary emulator (9 phases, 5 scenarios, tested); C2 sink
+  (tested); **family profiles — Mirai/Gafgyt/Mozi (`iot_family_profiles.py`),
+  with shared plumbing (`testbed_lib.py`); dry-runs verified, DHT bencoding and
+  exploit neutralisation unit-checked** (part of M5, brought forward); emulator
+  documentation; repo scaffold; this plan.
+- **Next:** M1 labelled-dataset pipeline (PCAP + `labels.csv` → Zeek `conn.log`
+  / nfstream flows → one labelled, feature-extracted, family-tagged CSV) →
+  M2 external validation → M3 benign generator → M4 detector + evaluation.
+- **Not yet run live** against the physical testbed: the family profiles have
+  been exercised only in dry-run + offline unit checks so far.
 
 ---
 
