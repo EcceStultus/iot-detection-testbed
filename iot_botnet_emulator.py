@@ -103,14 +103,14 @@ from datetime import datetime, timezone
 # =============================================================================
 
 # ---- network boundary (the ONLY network this tool may touch) ----------------
-LAB_NET = "192.168.50.0/24"
+LAB_NET = "192.168.25.0/24"
 ALLOW_NONPRIVATE = False          # leave False; only a deliberate edit lets it
                                   # touch non-RFC1918 space (it still must be
                                   # inside LAB_NET regardless)
 
 # ---- infrastructure ---------------------------------------------------------
-GATEWAY = "192.168.50.1"          # Raspberry Pi: router / DNS resolver / MQTT broker
-BROKER_HOST = "192.168.50.1"      # MQTT broker (usually the gateway)
+GATEWAY = "192.168.25.1"          # Raspberry Pi: router / DNS resolver / MQTT broker
+BROKER_HOST = "192.168.25.1"      # MQTT broker (usually the gateway)
 BROKER_PORT = 1883
 MQTT_USER = "iotuser"             # broker creds for the exfil publish (if broker
 MQTT_PASS = "iotpass"             #   requires auth; leave "" if it is open)
@@ -121,19 +121,19 @@ MQTT_PASS = "iotpass"             #   requires auth; leave "" if it is open)
 # its router" -- indistinguishable from normal and useless as a signature. Put
 # this on a dedicated box the IoT devices never normally contact (ideally on
 # the WAN side of the Pi so the beacon genuinely crosses the egress boundary).
-SIM_C2 = "192.168.50.60"
+SIM_C2 = "192.168.25.60"
 C2_HTTP_PORT = 80                 # register + gate.php style callbacks
 C2_TCP_PORT = 4444                # raw TCP heartbeat  (e.g. `nc -lk 4444`)
 C2_UDP_PORT = 4445                # raw UDP heartbeat
-ROGUE_BROKER_HOST = "192.168.50.60"   # unexpected MQTT broker (C2-in-MQTT shape)
+ROGUE_BROKER_HOST = "192.168.25.60"   # unexpected MQTT broker (C2-in-MQTT shape)
 ROGUE_BROKER_PORT = 1883
 
 # ---- victims in the lab -----------------------------------------------------
 DEVICES = {
-    "esp32_sensor": "192.168.50.15",
-    "smart_bulb":   "192.168.50.20",
-    "smart_plug":   "192.168.50.25",
-    "mqtt_client":  "192.168.50.50",
+    "esp32_sensor": "192.168.25.15",
+    "smart_bulb":   "192.168.25.20",
+    "smart_plug":   "192.168.25.25",
+    "mqtt_client":  "192.168.25.50",
 }
 VICTIM = DEVICES["mqtt_client"]   # "patient zero"
 DDOS_TARGET = DEVICES["smart_bulb"]   # a lab device the botnet is told to flood
