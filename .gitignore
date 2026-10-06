@@ -1,0 +1,17 @@
+# secrets
+config/broker.env
+*.env
+!config/broker.env.example
+# experiment outputs (can be huge / machine-specific)
+runs/*
+!runs/.gitkeep
+*.pcap
+*.pcapng
+sim_c2_log.jsonl
+# python
+__pycache__/
+*.pyc
+.venv/
+iot-venv/
+# macOS
+.DS_Store
