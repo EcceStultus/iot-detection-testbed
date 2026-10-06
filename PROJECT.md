@@ -261,8 +261,12 @@ iot-detection-testbed/
 ├── sim_c2.py                  ← C2 sink (done)
 ├── config/
 │   └── broker.env.example     ← template; real broker.env is git-ignored
+├── victim_sink.py             ← controlled patient-zero responder (done)
+├── capture.sh                 ← Pi-side PCAP capture w/ rotation+checksums (done)
 ├── docs/
-│   └── roadmap.md             ← short roadmap pointer
+│   ├── roadmap.md             ← short roadmap pointer
+│   ├── network-setup.md       ← testbed topology, addressing, setup, gotchas (done)
+│   └── runbook.md             ← run procedure, artifacts, inspection, gotchas (done)
 ├── runs/                      ← experiment outputs (git-ignored)
 └── (planned) benign/ pipeline/ detector/ eval/ configs/ datasets/
 ```
@@ -279,8 +283,18 @@ iot-detection-testbed/
 - **Next:** M1 labelled-dataset pipeline (PCAP + `labels.csv` → Zeek `conn.log`
   / nfstream flows → one labelled, feature-extracted, family-tagged CSV) →
   M2 external validation → M3 benign generator → M4 detector + evaluation.
-- **Not yet run live** against the physical testbed: the family profiles have
-  been exercised only in dry-run + offline unit checks so far.
+- **First live bring-up done.** Testbed wired up (Pi as AP/gateway on
+  `192.168.25.0/24`; isolated `10.10.10.0/24` WAN link to the lab PC running the
+  sim-C2; capture on the Pi's `wlan0`). The **C2 beacon path is validated
+  end-to-end** (Mirai `register,c2` reached the sim-C2 across the gateway's NAT),
+  and a **full `mirai --fire` ran** recon→access→loader→register→c2, with a first
+  PCAP captured. Fixes from that run: scapy-2.8 DNS DDoS vector (`qtype=255`),
+  silenced scapy ARP-miss warnings, and an up-front warning when `DDOS_TARGET`
+  is offline. See [`docs/runbook.md`](docs/runbook.md) and
+  [`docs/network-setup.md`](docs/network-setup.md).
+- **Open items before a clean dataset run:** manual Pi clock sync each session
+  (no RTC/NTP — breaks label joins otherwise); reconcile `DEVICES` with the real
+  testbed addresses; a live `DDOS_TARGET`; persist the Pi forwarding/NAT rules.
 
 ---
 

