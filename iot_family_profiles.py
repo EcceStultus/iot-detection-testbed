@@ -640,7 +640,8 @@ def _dos_burst(ctx, vector: str) -> int:
         return 0
     if not spoof and SCAPY.getmacbyip(DDOS_TARGET) is None:
         tl.info(f"      {DDOS_TARGET} is not ARP-reachable (powered off / not on the LAN?) -- "
-                f"this burst will be negligible; point DDOS_TARGET at a live host", C.Y)
+                f"skipping this raw burst to avoid broadcast spam; point DDOS_TARGET at a live host", C.Y)
+        return 0
     interval = 1.0 / DOS_BURST_PPS_CAP
     count = 0
     while _t.time() < end and not tl.stopped():

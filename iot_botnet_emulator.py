@@ -112,8 +112,8 @@ ALLOW_NONPRIVATE = False          # leave False; only a deliberate edit lets it
 GATEWAY = "192.168.25.1"          # Raspberry Pi: router / DNS resolver / MQTT broker
 BROKER_HOST = "192.168.25.1"      # MQTT broker (usually the gateway)
 BROKER_PORT = 1883
-MQTT_USER = "iotuser"             # broker creds for the exfil publish (if broker
-MQTT_PASS = "iotpass"             #   requires auth; leave "" if it is open)
+MQTT_USER = None                  # broker creds for the authenticated exfil publish --
+MQTT_PASS = None                  #   supply via env / broker.env, never hardcode. None = anonymous.
 
 # ---- the simulated C2, on a SEPARATE host from the gateway ------------------
 # Rationale (discussed): real C2 is traffic that leaves THROUGH the gateway to
