@@ -229,23 +229,3 @@ sudo ./iot-venv/bin/python3 iot_botnet_emulator.py run mirai_full --fire
    phase automatically.
 4. After the run, join the PCAP to `run_<id>_labels.csv` on the UTC start/end times
    to label each window, then develop/evaluate detection rules against the result.
-
----
-
-## 9. Limitations (state these as scope, not flaws)
-
-- It reproduces malware *network behaviour*, not malware code; on-host effects
-  (persistence, binary execution, real infection) are deliberately out of scope.
-- Signatures are only as faithful as the documented behaviour they are based on;
-  timing and volume are modelled, not captured from a live specimen.
-- It assumes an isolated lab you own and are authorised to test.
-
----
-
-## 10. References (behaviour sources)
-
-- Antonakakis et al., *Understanding the Mirai Botnet*, USENIX Security 2017.
-- EDIMA — IoT malware traffic generation on a contained testbed.
-- TON_IoT and REAL-IoT — labelled IoT attack-traffic dataset generation.
-- Public Mirai source analysis (default-credential list, BusyBox loader fingerprint).
-- MITRE ATT&CK (technique IDs used throughout).
