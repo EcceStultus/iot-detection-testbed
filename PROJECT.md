@@ -275,26 +275,25 @@ iot-detection-testbed/
 
 ## 13. Status & changelog
 
-- **Done:** generic adversary emulator (9 phases, 5 scenarios, tested); C2 sink
-  (tested); **family profiles — Mirai/Gafgyt/Mozi (`iot_family_profiles.py`),
-  with shared plumbing (`testbed_lib.py`); dry-runs verified, DHT bencoding and
-  exploit neutralisation unit-checked** (part of M5, brought forward); emulator
-  documentation; repo scaffold; this plan.
-- **Next:** M1 labelled-dataset pipeline (PCAP + `labels.csv` → Zeek `conn.log`
-  / nfstream flows → one labelled, feature-extracted, family-tagged CSV) →
-  M2 external validation → M3 benign generator → M4 detector + evaluation.
-- **First live bring-up done.** Testbed wired up (Pi as AP/gateway on
-  `192.168.25.0/24`; isolated `10.10.10.0/24` WAN link to the lab PC running the
-  sim-C2; capture on the Pi's `wlan0`). The **C2 beacon path is validated
-  end-to-end** (Mirai `register,c2` reached the sim-C2 across the gateway's NAT),
-  and a **full `mirai --fire` ran** recon→access→loader→register→c2, with a first
-  PCAP captured. Fixes from that run: scapy-2.8 DNS DDoS vector (`qtype=255`),
-  silenced scapy ARP-miss warnings, and an up-front warning when `DDOS_TARGET`
-  is offline. See [`docs/runbook.md`](docs/runbook.md) and
-  [`docs/network-setup.md`](docs/network-setup.md).
-- **Open items before a clean dataset run:** manual Pi clock sync each session
-  (no RTC/NTP — breaks label joins otherwise); reconcile `DEVICES` with the real
-  testbed addresses; a live `DDOS_TARGET`; persist the Pi forwarding/NAT rules.
+- **Done:** three-family adversary generator — Mirai/Gafgyt/Mozi
+  (`iot_family_profiles.py` + `testbed_lib.py`); C2 sink (`sim_c2.py`); victim
+  sink; capture wrapper; **M1 feature pipeline** (`pipeline/extract_features.py`,
+  nfstream flows + grace-margin labelling); **three complete labelled datasets** —
+  every phase of every family's chain lands (`datasets/`, 2026-10-08);
+  **publication figures** (`figures/`); testbed + network docs.
+- **Validated end-to-end (2026-10-08).** Pi AP/gateway on `192.168.25.0/24`;
+  isolated `10.10.10.0/24` WAN link to the sim-C2 host; capture on the Pi's
+  `wlan0`. The C2 beacon crosses the gateway's NAT, and all three families ran
+  their full chains to labelled datasets. recon (ARP-sweep + SYN) and exploit both
+  land now; the pipeline's grace margin absorbs the tool-launch skew.
+- **Next:** **signature-based detection (core deliverable)** — Zeek signatures +
+  scripts evaluated against the labelled captures (detection rate + false-positive
+  rate, per family/phase). Then M2 external validation (real IoT-23 / Bot-IoT) and
+  M3 benign generator; ML (M4b) is the stretch goal.
+- **Known limitations:** recon/loader/register/exploit are small flow classes —
+  an isolated subnet reaches only ~3 live hosts and several phases are single-shot.
+  Fine for signature detection (the packet-level pattern is clear); a constraint
+  for flow-level ML. Pi clock sync is still manual (no RTC/NTP).
 
 ---
 

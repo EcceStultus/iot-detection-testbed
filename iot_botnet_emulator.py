@@ -130,13 +130,14 @@ ROGUE_BROKER_PORT = 1883
 
 # ---- victims in the lab -----------------------------------------------------
 DEVICES = {
-    "esp32_sensor": "192.168.25.15",
-    "smart_bulb":   "192.168.25.20",
-    "smart_plug":   "192.168.25.25",
-    "mqtt_client":  "192.168.25.50",
+    "pir_coap":    "192.168.25.15",   # ESP32 + PIR dome; CoAP PUT /object {"detected":...}; MAC c8:c9:a3:69:6d:ad
+    "dht":         "192.168.25.20",   # ESP32 + DHT22 temp/humidity (MQTT node); MAC c8:c9:a3:69:6d:02
+    "smart_bulb":  "192.168.25.30",   # smart bulb; MAC ac:a7:f1:4a:3c:a2
+    "mqtt_client": "192.168.25.50",   # "patient zero" -- NOT on the LAN (VICTIM target, currently unused)
 }
+# NOTE: ultrasonic sensor is currently UNPLUGGED -- not on the testbed, so not listed here.
 VICTIM = DEVICES["mqtt_client"]   # "patient zero"
-DDOS_TARGET = DEVICES["smart_bulb"]   # a lab device the botnet is told to flood
+DDOS_TARGET = DEVICES["pir_coap"]   # a lab device the botnet is told to flood
                                   # (NOT the gateway -- flooding the gateway would
                                   #  also drop your capture/C2 path mid-run)
 
@@ -178,7 +179,7 @@ PHASE_SPACING     = (2, 5)   # random gap between chained phases
 # ---- optional: make traffic appear to come from a compromised device --------
 # Source-IP spoofing for scan/DoS (scapy), kept inside LAB_NET. Off by default
 # because it complicates response handling; enable for SunBlock-style realism.
-SPOOF_SRC = None             # e.g. DEVICES["smart_plug"]; None = use real IP
+SPOOF_SRC = None             # e.g. DEVICES["dht"]; None = use real IP
 
 # ---- output -----------------------------------------------------------------
 OUT_DIR = "runs"

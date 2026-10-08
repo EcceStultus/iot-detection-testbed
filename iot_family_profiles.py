@@ -107,17 +107,18 @@ C2_HTTP_PORT = 80                   # register / gate.php / config pull
 C2_TCP_PORT = 4444                  # raw-TCP C2 (mirai heartbeat, gafgyt tokens)
 
 DEVICES = {
-    "esp32_sensor": "192.168.25.15",
-    "smart_bulb":   "192.168.25.20",
-    "smart_plug":   "192.168.25.25",
-    "mqtt_client":  "192.168.25.50",
+    "pir_coap":    "192.168.25.15",   # ESP32 + PIR dome; CoAP PUT /object {"detected":...}; MAC c8:c9:a3:69:6d:ad
+    "dht":         "192.168.25.20",   # ESP32 + DHT22 temp/humidity (MQTT node); MAC c8:c9:a3:69:6d:02
+    "smart_bulb":  "192.168.25.30",   # smart bulb; MAC ac:a7:f1:4a:3c:a2
+    "mqtt_client": "192.168.25.50",   # "patient zero" -- NOT on the LAN (VICTIM target, currently unused)
 }
+# NOTE: ultrasonic sensor is currently UNPLUGGED -- not on the testbed, so not listed here.
 VICTIM = DEVICES["mqtt_client"]     # "patient zero"
 # A lab device to flood -- MUST be live/ARP-reachable or the burst is negligible,
 # and NEVER the gateway (that would drop the capture/C2 path mid-run). The ESP32
 # at .15 is the confirmed-live device on the current testbed; change as devices
 # come online. (See docs/runbook.md "pick a live DDoS target".)
-DDOS_TARGET = DEVICES["esp32_sensor"]
+DDOS_TARGET = DEVICES["pir_coap"]
 
 # Mozi DHT: peers stay in the lab for containment. The real public bootstrap
 # nodes (router.bittorrent.com:6881, dht.transmissionbt.com:6881, etc.) are

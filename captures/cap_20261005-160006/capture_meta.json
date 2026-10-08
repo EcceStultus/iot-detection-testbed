@@ -1,0 +1,14 @@
+{
+  "capture_id": "cap_20261005-160006",
+  "host": "edge.home.arpa",
+  "interface": "wlan0",
+  "bpf_filter": "(net 192.168.25.0/24) or (host 10.10.10.60)",
+  "lab_net": "192.168.25.0/24",
+  "sim_c2_wan": "10.10.10.60",
+  "snaplen": 0,
+  "rotate_seconds": 3600,
+  "start_utc": "2026-10-05T16:00:07+0000",
+  "ntp_synchronized": "no",
+  "tcpdump_version": "tcpdump version 4.99.5",
+  "kernel": "Linux 6.12.75+rpt-rpi-v8 aarch64"
+}

@@ -25,9 +25,9 @@
          └─────────┬─────────┘
                    │  Wi-Fi hotspot  (all lab traffic transits the Pi by design)
      ┌─────────────┼───────────────┬───────────────┬──────────────┐
-  ESP32 sensor   smart bulb     smart plug     patient zero     Attacker
- 192.168.25.15  192.168.25.20  192.168.25.25   192.168.25.50    (MacBook)
-                (DDoS target)                  (victim_sink)   DHCP from Pi
+   PIR sensor     DHT22 sensor     smart bulb        Attacker
+  192.168.25.15   192.168.25.20    192.168.25.30     (MacBook)
+  (CoAP; DDoS      (MQTT; temp/      (benign)          DHCP from Pi
 ```
 
 Because the Pi is the devices' **Wi-Fi access point**, every packet a device
@@ -41,23 +41,24 @@ research claim of detecting **at the gateway**.
 |---|---|---|---|
 | Pi gateway "edge" — LAN/AP | `wlan0` | `192.168.25.1/24` | DHCP, DNS, MQTT broker; **capture interface** |
 | Pi gateway — WAN link | `eth0` | `10.10.10.1/24` | isolated link to C2; `never-default` (no internet route) |
-| Lab PC — sim-C2 | USB-Eth | `10.10.10.60/24` | **no gateway** on this NIC; built-in NIC stays on uni separately |
-| ESP32 sensor | Wi-Fi | `192.168.25.15` | real device (benign traffic) |
-| Smart bulb | Wi-Fi | `192.168.25.20` | real device; **DDoS target** role |
-| Smart plug | Wi-Fi | `192.168.25.25` | real device (benign traffic) |
-| Patient zero | Wi-Fi | `192.168.25.50` | controlled stand-in running `victim_sink.py` |
+| C2 host — sim-C2 (ThinkPad) | USB-Eth | `10.10.10.60/24` | **no gateway** on this NIC; its normal uplink stays on a separate NIC |
+| PIR sensor (ESP32) | Wi-Fi | `192.168.25.15` | CoAP/UDP 5683; MAC `c8:c9:a3:69:6d:ad`; **DDoS target** (confirmed live) |
+| DHT22 sensor (ESP32) | Wi-Fi | `192.168.25.20` | MQTT temp/humidity; MAC `c8:c9:a3:69:6d:02` |
+| Smart bulb | Wi-Fi | `192.168.25.30` | MAC `ac:a7:f1:4a:3c:a2`; benign (DNS/NTP chatter) |
+| Ultrasonic sensor (ESP32) | Wi-Fi | — | CoAP; **currently UNPLUGGED** — not on the testbed |
+| Patient zero | Wi-Fi | `192.168.25.50` | `victim_sink.py` host — **not deployed**; VICTIM unused, victim phases skipped |
 | Attacker | Wi-Fi | DHCP | MacBook running the generators |
 
 The C2 (`SIM_C2 = 10.10.10.60`) is the single host outside `LAB_NET` that the
 generators are permitted to reach — enforced by `EGRESS_ALLOW` in
 `iot_family_profiles.py`. Everything else stays inside `192.168.25.0/24`.
 
-**Config vs. observed reality (to reconcile).** The table above is the intended
-plan. On the live testbed, `ip neigh show dev wlan0` currently shows these
-associated clients: the Mac (`.12`), the ESP32 (`.15`), and two **unidentified**
-devices at `.10` and `.76`; the configured `.20`/`.25`/`.50` are not presently
-powered/connected. `DDOS_TARGET` is therefore set to the confirmed-live ESP32
-(`.15`). Identify `.10`/`.76` and update `DEVICES` so labels match reality.
+**Confirmed live state (2026-10-08).** `ip neigh show dev wlan0` shows: Mac
+(`.12`), PIR (`.15`, confirmed by its CoAP `{"detected":...}` traffic), DHT22
+(`.20`), and the smart bulb (`.30`). The ultrasonic sensor is unplugged and the
+`.50` patient-zero host is not deployed, so the `access`/`loader` victim phases
+are skipped. `DDOS_TARGET` is the confirmed-live PIR at `.15`; `DEVICES` in both
+`iot_family_profiles.py` and `iot_botnet_emulator.py` matches this.
 
 ## 3. Pi configuration
 
@@ -76,7 +77,11 @@ sudo iptables -t nat -A POSTROUTING -o eth0 -s 192.168.25.0/24 -j MASQUERADE
 We capture on `wlan0` (the LAN/pre-NAT side), so packets keep their **real device
 source IPs** for joining to the per-device ground-truth labels.
 
-## 4. Lab PC (Ubuntu) configuration
+## 4. C2 host (Lenovo ThinkPad, Ubuntu) configuration
+
+> The sim-C2 role moved from the original lab PC to a Lenovo ThinkPad running
+> Ubuntu — same role, same addressing. "uni connection" below means whatever
+> normal uplink that machine uses; keep it on a separate NIC from the lab link.
 
 - USB-Eth NIC: static `10.10.10.60/24`, **gateway and DNS left blank** (so the
   built-in NIC remains the PC's default route and the uni connection is

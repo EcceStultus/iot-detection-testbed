@@ -10,7 +10,7 @@
 | Machine | Role | Runs |
 |---|---|---|
 | **MacBook** | attacker | the generators (`iot_family_profiles.py`) |
-| **Lab PC** (Ubuntu) | sim-C2, on the isolated WAN segment | `sim_c2.py` |
+| **C2 host** (ThinkPad, Ubuntu) | sim-C2, on the isolated WAN segment | `sim_c2.py` |
 | **Raspberry Pi** "edge" | gateway / AP / capture | `capture.sh` |
 
 The lab is **isolated from the internet**, which drives several of the steps
@@ -57,7 +57,7 @@ If the PC has no SSH server (can't `apt install` offline), use netcat:
    ```
    Choose a REACHABLE/STALE device that is **not** the Pi (`.1`) or the Mac, and
    make sure `DDOS_TARGET` in `iot_family_profiles.py` points at it (currently the
-   ESP32 at `.15`). A flood at an offline host produces almost no packets.
+   PIR at `.15`). A flood at an offline host produces almost no packets.
 
 ## Run order
 
@@ -84,6 +84,11 @@ Phase subsets are handy for targeted captures:
 ... run gafgyt --phases access,exploit,register,c2 --fire   # no scapy needed
 ... run mozi   --phases config_pull,dht_join,dht_beacon --fire
 ```
+
+## Building the dataset
+
+Turn a capture + its `run_*_labels.csv` into a labelled flow dataset with
+`pipeline/extract_features.py` — see [`../pipeline/README.md`](../pipeline/README.md).
 
 ## Artifacts (three ground-truth sources, joined on UTC time)
 
@@ -117,22 +122,26 @@ sudo tcpdump -nr "$f" host 10.10.10.60
 | `zsh: no matches found: ...?test=1` | zsh globs the `?` in a URL | quote the URL |
 | `sudo` slow + `unable to resolve host edge.home.arpa` | Pi hostname not locally resolvable | `echo "127.0.1.1 edge edge.home.arpa" | sudo tee -a /etc/hosts` |
 
-## Validation status (as of first live bring-up)
+## Validation status (2026-10-08)
 
-- ✅ **C2 path validated end-to-end**: `mirai register,c2` beacons reached the PC
-  sim-C2 at `10.10.10.60` via the Pi's NAT (sink logged `peer: 10.10.10.1`),
-  confirming the beacon genuinely crosses the gateway.
-- ✅ **First full `mirai --fire` ran** recon→access→loader→register→c2 cleanly;
-  `ddos` surfaced the DNS-vector bug (now fixed) and the live-target requirement.
-- ⚠️ **Patient-zero victim host intentionally omitted** for now — `access`/`loader`
-  produce connection-attempt signatures only (no application-layer payloads).
+- ✅ **All three families captured and labelled end-to-end** — Mirai, Gafgyt and
+  Mozi each ran their full chain; every phase (recon, access, loader, exploit,
+  register, c2, dht_join/config_pull/dht_beacon, ddos) lands as labelled flows.
+- ✅ **C2 path validated**: beacons reach the sim-C2 at `10.10.10.60` via the Pi's
+  NAT, confirming the beacon crosses the gateway.
+- ✅ **recon fixed** — it ARP-sweeps the subnet and SYNs the live hosts;
+  **exploit fixed** once the target devices (`.20`/`.30`) were powered.
+- ✅ **Datasets built** with `pipeline/extract_features.py` (one labelled-flow CSV
+  per family, in `datasets/`). The pipeline applies a grace margin to phase windows
+  because the scan tools fire ~2–6 s before the generator stamps the phase start.
+- ⚠️ **Patient-zero `.50` not deployed** — `access`/`loader` produce
+  connection-attempt signatures only.
 - ⚠️ **Clock sync is manual** pending a local NTP server / RTC (see TODO below).
 
 ## TODO / hardening
 
 - Durable clock: run a local NTP server on a lab host (or fit a Pi RTC) so the
   capture clock survives reboots without manual setting.
-- Reconcile `DEVICES` in `iot_family_profiles.py` with the real testbed addresses
-  (currently `.10` and `.76` are unidentified live clients; `.20/.25/.50` are not
-  present).
+- `DEVICES` is reconciled with the real testbed (PIR `.15` CoAP, DHT22 `.20` MQTT,
+  bulb `.30`; `.50` patient-zero not deployed) — see `network-setup.md` §2.
 - Persist the Pi's `ip_forward` + NAT rule (see `network-setup.md` §8).

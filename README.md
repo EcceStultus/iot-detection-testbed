@@ -2,6 +2,13 @@
 
 `iot_botnet_emulator.py`
 
+> **Current generator:** the testbed now runs on `iot_family_profiles.py` (Mirai /
+> Gafgyt / Mozi family profiles, built on `testbed_lib.py`) — that is what the
+> runbook, captures and `datasets/` use. The `iot_botnet_emulator.py` documented
+> here is the original single-profile reference; the inert-emulation rationale
+> applies to both. See `PROJECT.md` for status and `pipeline/README.md` for turning
+> captures into datasets.
+
 A reproducible, labelled generator of the **network behaviour** of IoT botnets
 (Mirai / Gafgyt / Mozi family) for a smart-home intrusion-detection testbed. It
 replays the on-the-wire *signatures* of a botnet infection — scanning, credential
