@@ -8,6 +8,10 @@
 set -euo pipefail
 
 PCAP="${1:?usage: ./run.sh <capture.pcap> [outdir]}"
+# resolve to an absolute path BEFORE we cd into the output dir
+PCAP="$(cd "$(dirname "$PCAP")" && pwd)/$(basename "$PCAP")"
+[[ -f "$PCAP" ]] || { echo "error: no such pcap: $PCAP" >&2; exit 1; }
+
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OUT="${2:-$HERE/zeek-out/$(basename "${PCAP%.*}")}"
 
@@ -21,7 +25,6 @@ zeek -C -r "$PCAP" "$HERE/scripts/main.zeek"
 echo
 echo "=================  NOTICES  ================="
 if [[ -f notice.log ]]; then
-    # print the human-readable message column
     zeek-cut -d note msg < notice.log 2>/dev/null || cat notice.log
 else
     echo "(no notice.log produced -- nothing fired)"
