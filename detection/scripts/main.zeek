@@ -16,6 +16,14 @@
 
 @load base/frameworks/notice
 @load base/frameworks/sumstats
+@load base/frameworks/signatures
+
+# Our signatures.zeek raises clean, deduplicated notices from signature_match;
+# silence Zeek's built-in per-match signature notices so notice.log stays tidy.
+redef Notice::ignored_types += {
+    Signatures::Sensitive_Signature,
+    Signatures::Multiple_Sig_Responders,
+};
 
 module IoTBotnet;
 

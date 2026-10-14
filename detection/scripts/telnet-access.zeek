@@ -33,7 +33,7 @@ global tel_syn:   table[addr] of count &default=0;   # telnet SYNs per dst
 global tot_syn:   table[addr] of count &default=0;   # all SYNs per dst
 global tel_fired: set[addr];
 
-event connection_attempt(c: connection)
+event new_connection(c: connection)
     {
     local d = c$id$resp_h;
     tot_syn[d] += 1;

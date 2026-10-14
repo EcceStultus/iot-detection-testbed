@@ -40,7 +40,7 @@ signature hnap_soap_exploit {
 # Kill-chain: loader | MITRE: T1105 Ingress Tool Transfer
 signature loader_bins_pull {
     ip-proto == tcp
-    http-request /.*GET[[:space:]]+\/bins\//
+    http-request /.*\/bins\//
     event "LOADER HTTP binary pull from /bins/ (stage-2 download)"
 }
 
